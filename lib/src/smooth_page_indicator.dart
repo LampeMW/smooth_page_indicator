@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:preload_page_view/preload_page_view.dart';
 
 import 'effects/indicator_effect.dart';
 import 'effects/worm_effect.dart';
@@ -14,7 +15,11 @@ typedef OnDotClicked = void Function(int index);
 /// Uses the [PageController.offset] to animate the active dot
 class SmoothPageIndicator extends StatefulWidget {
   /// The page view controller
-  final PageController controller;
+  final PageController? controller;
+
+  /// The optional PreloadPageController if using a PreloadPageView instead of
+  /// a PageView
+  final PreloadPageController? preloadController;
 
   /// Holds effect configuration to be used in the [BasicIndicatorPainter]
   final IndicatorEffect effect;
@@ -38,13 +43,16 @@ class SmoothPageIndicator extends StatefulWidget {
   /// Default constructor
   const SmoothPageIndicator({
     Key? key,
-    required this.controller,
+    this.controller,
+    this.preloadController,
     required this.count,
     this.axisDirection = Axis.horizontal,
     this.textDirection,
     this.onDotClicked,
     this.effect = const WormEffect(),
-  }) : super(key: key);
+  })  : assert(controller != null || preloadController != null,
+            'either controller or preloadController are required'),
+        super(key: key);
 
   @override
   State<SmoothPageIndicator> createState() => _SmoothPageIndicatorState();
@@ -103,7 +111,9 @@ class _SmoothPageIndicatorState extends State<SmoothPageIndicator>
   @override
   Widget build(BuildContext context) {
     return AnimatedBuilder(
-      animation: widget.controller,
+      animation: widget.controller != null
+          ? widget.controller!
+          : widget.preloadController!,
       builder: (context, _) => SmoothIndicator(
         offset: _offset,
         count: count,
@@ -117,11 +127,16 @@ class _SmoothPageIndicatorState extends State<SmoothPageIndicator>
 
   double get _offset {
     try {
-      var offset =
-          widget.controller.page ?? widget.controller.initialPage.toDouble();
+      var offset = widget.controller != null
+          ? (widget.controller!.page ??
+              widget.controller!.initialPage.toDouble())
+          : widget.preloadController!.page ??
+              widget.preloadController!.initialPage.toDouble();
       return offset % widget.count;
     } catch (_) {
-      return widget.controller.initialPage.toDouble();
+      return widget.controller != null
+          ? widget.controller!.initialPage.toDouble()
+          : widget.preloadController!.initialPage.toDouble();
     }
   }
 
